@@ -26,57 +26,6 @@ export function useVoice() {
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
 
-    recognition.onresult = (event: any) => {
-      let interimTranscript = '';
-      let newFinalTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          newFinalTranscript += transcript + ' ';
-        } else {
-          interimTranscript = transcript;
-        }
-      }
-
-      if (newFinalTranscript) {
-        finalTranscriptRef.current += newFinalTranscript;
-      }
-
-      // Send the accumulated final transcript + current interim to the callback
-      const fullText = (finalTranscriptRef.current + interimTranscript).trim();
-      if (onResultRef.current && fullText) {
-        onResultRef.current(fullText);
-      }
-    };
-
-    recognition.onend = () => {
-      // Auto-restart if we should still be listening (browser stops after silence)
-      if (shouldRestartRef.current) {
-        try {
-          recognition.start();
-        } catch (e) {
-          console.warn('Could not restart recognition:', e);
-          setIsListening(false);
-          shouldRestartRef.current = false;
-        }
-      } else {
-        setIsListening(false);
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
-      if (event.error === 'aborted') return; // Intentional stop
-      if (event.error === 'no-speech') {
-        // No speech detected; if we should keep listening, it'll auto-restart via onend
-        return;
-      }
-      // For other errors, stop listening
-      shouldRestartRef.current = false;
-      setIsListening(false);
-    };
-
     return recognition;
   }, []);
 
@@ -127,6 +76,63 @@ export function useVoice() {
     }
 
     recognitionRef.current = recognition;
+
+    let currentSessionFinal = '';
+
+    recognition.onresult = (event: any) => {
+      currentSessionFinal = '';
+      let currentSessionInterim = '';
+
+      // Loop from 0 to length to prevent Android duplicate isFinal bugs
+      for (let i = 0; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          currentSessionFinal += transcript + ' ';
+        } else {
+          currentSessionInterim += transcript;
+        }
+      }
+
+      // Combine base transcripts with current session transcripts securely
+      const fullText = (finalTranscriptRef.current + ' ' + currentSessionFinal + currentSessionInterim).replace(/\s+/g, ' ').trim();
+      
+      if (onResultRef.current && fullText) {
+        onResultRef.current(fullText);
+      }
+    };
+
+    recognition.onend = () => {
+      // Save this session's final string to the permanent ref when the session drops
+      if (currentSessionFinal) {
+        finalTranscriptRef.current += ' ' + currentSessionFinal;
+        currentSessionFinal = '';
+      }
+      
+      // Auto-restart if we should still be listening (browser stops after silence)
+      if (shouldRestartRef.current) {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn('Could not restart recognition:', e);
+          setIsListening(false);
+          shouldRestartRef.current = false;
+        }
+      } else {
+        setIsListening(false);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      if (event.error === 'aborted') return; // Intentional stop
+      if (event.error === 'no-speech') {
+        // No speech detected; if we should keep listening, it'll auto-restart via onend
+        return;
+      }
+      // For other errors, stop listening
+      shouldRestartRef.current = false;
+      setIsListening(false);
+    };
 
     try {
       recognition.start();
