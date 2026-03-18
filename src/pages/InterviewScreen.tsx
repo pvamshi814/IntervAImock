@@ -422,7 +422,7 @@ export function InterviewScreen() {
       {/* Main Interview Area */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left Side: AI Interviewer (3 cols) */}
-        <Card className="lg:col-span-3 bg-white/[0.03] border-white/[0.06] flex flex-col min-h-[520px] relative overflow-hidden">
+        <Card className="lg:col-span-3 bg-white/[0.03] border-white/[0.06] flex flex-col min-h-[320px] lg:min-h-[520px] relative overflow-hidden">
           {/* Decorative gradient orbs */}
           <div className="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl" />
           <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-violet-500/5 rounded-full blur-3xl" />
