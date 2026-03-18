@@ -122,19 +122,20 @@ export async function evaluateInterview(
   - Qualification: ${qualification}
   - Status: ${userStatus}
   
-  Interview Data:
+  Interview Data (Questions and Answers):
   ${JSON.stringify(history, null, 2)}
   
-  Provide a detailed, professional evaluation including:
-  1. Communication Score (0-100): How clearly and effectively did they explain concepts?
-  2. Technical Score (0-100): How accurate and deep was their technical knowledge?
-  3. Overall Score (0-100): Weighted average based on the role.
-  4. Feedback:
-      - Strengths (list of strings)
-      - Weaknesses (list of strings)
-      - Suggestions (list of strings for improvement)
+  Instructions:
+  1. Provide a detailed, professional evaluation of the candidate's performance.
+  2. Communication Score (0-100): Evaluate clarity, confidence, and structure of explanations.
+  3. Technical Score (0-100): Evaluate accuracy, depth of knowledge, and problem-solving approach.
+  4. Overall Score (0-100): A weighted average based on the role and difficulty.
+  5. Feedback:
+      - Strengths: List 3-5 specific areas where the candidate performed well.
+      - Weaknesses: List 3-5 specific areas where the candidate needs improvement.
+      - Suggestions: Provide actionable advice for further study or practice.
   
-  Return the response as a JSON object matching the requested schema.`;
+  Return the response as a JSON object matching the requested schema. Ensure the feedback is constructive and professional.`;
 
   try {
     const response = await ai.models.generateContent({

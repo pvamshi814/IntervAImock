@@ -176,11 +176,16 @@ export function InterviewScreen() {
   }, [currentQuestion, currentAnswer, history, domain, difficulty, qualification, userStatus, navigate, showToast, stopSpeaking, stopListening, handleQuotaError, isQuotaError]);
 
   const finalizeInterview = async (finalHistory: { question: string; answer: string }[]) => {
+    if (!auth.currentUser) {
+      showToast("You must be logged in to save results.", "error");
+      navigate('/login');
+      return;
+    }
     setSubmitting(true);
     try {
       const evaluation = await evaluateInterview(domain, difficulty, qualification, userStatus, finalHistory);
       const interviewData = {
-        userId: auth.currentUser?.uid,
+        userId: auth.currentUser.uid,
         domain,
         difficulty,
         qualification,
@@ -340,6 +345,17 @@ export function InterviewScreen() {
           
           <AIAvatar isSpeaking={isSpeaking} className="scale-125" />
           
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2 text-indigo-400 font-medium animate-pulse"
+            >
+              <BrainCircuit className="w-4 h-4" />
+              AI is thinking...
+            </motion.div>
+          )}
+
           <div className="space-y-4 max-w-md">
             <Badge variant="secondary" className="bg-white/5 border-white/10">AI Interviewer</Badge>
             <AnimatePresence mode="wait">
@@ -451,6 +467,19 @@ export function InterviewScreen() {
                   {!loading && <ArrowRight className="w-5 h-5 ml-2" />}
                 </Button>
               </div>
+
+              {history.length >= 3 && !loading && (
+                <div className="pt-4">
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    onClick={() => finalizeInterview([...history, { question: currentQuestion, answer: currentAnswer }])}
+                    className="w-full text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 rounded-2xl"
+                  >
+                    Finish & Evaluate Early
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
