@@ -176,19 +176,19 @@ export function InterviewScreen() {
   }, [isListening, listen, currentAnswer]);
 
   const handleNext = useCallback(async () => {
-    const isRetry = history.length > 0 && history[history.length - 1].question === currentQuestion;
-    
-    let newHistory = history;
-    if (!isRetry) {
-      newHistory = [...history, { question: currentQuestion, answer: currentAnswer }];
-      setHistory(newHistory);
-      setCurrentAnswer('');
-    }
+    // Always add the current Q&A to history
+    const newHistory = [...history, { question: currentQuestion, answer: currentAnswer }];
+    setHistory(newHistory);
+    setCurrentAnswer('');
     
     stopSpeaking();
     stopListening();
 
-    if (newHistory.length < MAX_QUESTIONS) {
+    // If we've completed all questions, finalize the interview
+    if (newHistory.length >= MAX_QUESTIONS) {
+      await finalizeInterview(newHistory);
+    } else {
+      // Otherwise, generate the next question
       setLoading(true);
       try {
         const next = await generateNextQuestion(domain, difficulty, qualification, userStatus, newHistory);
@@ -203,8 +203,6 @@ export function InterviewScreen() {
           await finalizeInterview(newHistory);
         }
       }
-    } else {
-      await finalizeInterview(newHistory);
     }
   }, [currentQuestion, currentAnswer, history, domain, difficulty, qualification, userStatus, navigate, showToast, stopSpeaking, stopListening, handleQuotaError, isQuotaError]);
 
@@ -591,7 +589,7 @@ export function InterviewScreen() {
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      {history.length === MAX_QUESTIONS - 1 ? (
+                      {questionNumber >= MAX_QUESTIONS ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 mr-2" />
                           Finish Interview

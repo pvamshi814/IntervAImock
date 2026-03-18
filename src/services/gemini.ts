@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Domain, Difficulty, Question, Interview, Qualification, UserStatus } from "../types";
 
 // Lazy initialization helper to ensure we use the latest API key
@@ -150,7 +150,7 @@ export async function evaluateInterview(
   history: { question: string; answer: string }[]
 ): Promise<Partial<Interview>> {
   const ai = getAI();
-  const model = "gemini-2.0-flash";
+  const model = "gemini-2.5-flash";
   
   const prompt = `Evaluate the following mock interview comprehensively.
   
@@ -173,36 +173,32 @@ export async function evaluateInterview(
       - Suggestions: Provide 3-5 actionable study/practice tips.
   
   Be fair but honest. If answers are mostly empty or irrelevant, scores should reflect that.
-  Return as JSON matching the schema.`;
+  
+  You MUST return ONLY valid JSON with this exact structure (no markdown, no explanation):
+  {
+    "communicationScore": <number>,
+    "technicalScore": <number>,
+    "overallScore": <number>,
+    "feedback": {
+      "strengths": ["..."],
+      "weaknesses": ["..."],
+      "suggestions": ["..."]
+    }
+  }`;
 
   try {
     const response = await ai.models.generateContent({
       model,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            communicationScore: { type: Type.NUMBER },
-            technicalScore: { type: Type.NUMBER },
-            overallScore: { type: Type.NUMBER },
-            feedback: {
-              type: Type.OBJECT,
-              properties: {
-                strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-                weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-                suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-              },
-              required: ["strengths", "weaknesses", "suggestions"],
-            },
-          },
-          required: ["communicationScore", "technicalScore", "overallScore", "feedback"],
-        },
-      },
     });
 
-    return JSON.parse(response.text || "{}");
+    const text = response.text || "{}";
+    // Extract JSON from response (handle markdown code blocks or extra text)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    return JSON.parse(text);
   } catch (error: any) {
     const isQuota = error.code === 429 || JSON.stringify(error).includes('429') || JSON.stringify(error).includes('RESOURCE_EXHAUSTED');
     if (isQuota) {
