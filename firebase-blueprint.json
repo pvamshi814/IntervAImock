@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores personal information and preferences for the user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the user."
+        },
+        "domain": {
+          "type": "string",
+          "enum": ["Frontend", "Backend", "Fullstack", "AI/ML", "Data Science", "Mobile", "DevOps"],
+          "description": "Target job domain."
+        },
+        "experience": {
+          "type": "string",
+          "enum": ["Fresher", "Experienced"],
+          "description": "Experience level of the user."
+        },
+        "qualification": {
+          "type": "string",
+          "enum": ["B.Tech", "M.Tech", "Science", "Commerce", "Arts", "Other"],
+          "description": "Educational qualification."
+        },
+        "userStatus": {
+          "type": "string",
+          "enum": ["Student", "Teacher", "Professional", "Job Seeker"],
+          "description": "Current professional status."
+        },
+        "education": {
+          "type": "string",
+          "description": "Educational background."
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp when the profile was created."
+        }
+      },
+      "required": ["uid", "name", "email", "domain", "experience", "createdAt"]
+    },
+    "Interview": {
+      "title": "Interview Session",
+      "description": "Stores the results and data of a mock interview session.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the user who took the interview."
+        },
+        "domain": {
+          "type": "string",
+          "description": "The domain of the interview."
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["Easy", "Medium", "Hard"],
+          "description": "The difficulty level."
+        },
+        "qualification": {
+          "type": "string",
+          "enum": ["B.Tech", "M.Tech", "Science", "Commerce", "Arts", "Other"],
+          "description": "Candidate qualification."
+        },
+        "userStatus": {
+          "type": "string",
+          "enum": ["Student", "Teacher", "Professional", "Job Seeker"],
+          "description": "Candidate status."
+        },
+        "questions": {
+          "type": "array",
+          "description": "List of questions asked."
+        },
+        "answers": {
+          "type": "array",
+          "description": "List of answers provided."
+        },
+        "overallScore": {
+          "type": "number",
+          "description": "Overall score out of 100."
+        },
+        "technicalScore": {
+          "type": "number",
+          "description": "Technical score out of 100."
+        },
+        "communicationScore": {
+          "type": "number",
+          "description": "Communication score out of 100."
+        },
+        "feedback": {
+          "type": "object",
+          "description": "Detailed feedback object."
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp when the interview was completed."
+        }
+      },
+      "required": ["userId", "domain", "difficulty", "qualification", "userStatus", "questions", "answers", "overallScore", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles."
+    },
+    "/interviews/{interviewId}": {
+      "schema": "Interview",
+      "description": "Collection of interview results."
+    }
+  }
+}

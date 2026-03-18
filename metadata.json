@@ -1,0 +1,7 @@
+{
+  "name": "IntervAI - Premium AI Mock Interview Platform",
+  "description": "A high-end AI-powered mock interview platform featuring real-time voice interaction, performance analytics, and personalized feedback using Gemini AI and Firebase.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
