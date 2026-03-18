@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Domain = 'Frontend' | 'Backend' | 'Fullstack' | 'AI/ML' | 'Data Science' | 'Mobile' | 'DevOps';
+// Flexible string types — the actual options are defined in InterviewSetup.tsx
+export type Domain = string;
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
-export type Qualification = 'B.Tech' | 'M.Tech' | 'Science' | 'Commerce' | 'Arts' | 'Other';
+export type Qualification = string;
 export type UserStatus = 'Student' | 'Teacher' | 'Professional' | 'Job Seeker';
 
 export interface UserProfile {

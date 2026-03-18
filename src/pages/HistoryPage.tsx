@@ -31,13 +31,31 @@ export function HistoryPage() {
     const fetchHistory = async () => {
       if (!auth.currentUser) return;
       try {
-        const q = query(
-          collection(db, 'interviews'),
-          where('userId', '==', auth.currentUser.uid),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interview));
+        let history: Interview[] = [];
+        try {
+          // Try with orderBy first (requires index)
+          const q = query(
+            collection(db, 'interviews'),
+            where('userId', '==', auth.currentUser.uid),
+            orderBy('createdAt', 'desc')
+          );
+          const querySnapshot = await getDocs(q);
+          history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interview));
+        } catch (error: any) {
+          // Fallback to client-side sort if index is missing
+          if (error.message?.includes('index') || error.code === 'failed-precondition') {
+            console.warn("Firestore index missing. Falling back to client-side sorting.");
+            const fallbackQ = query(
+              collection(db, 'interviews'),
+              where('userId', '==', auth.currentUser.uid)
+            );
+            const querySnapshot = await getDocs(fallbackQ);
+            history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interview));
+            history.sort((a, b) => b.createdAt - a.createdAt);
+          } else {
+            throw error;
+          }
+        }
         setInterviews(history);
       } catch (error) {
         console.error("Error fetching interview history", error);

@@ -3,7 +3,6 @@ import { Domain, Difficulty, Question, Interview, Qualification, UserStatus } fr
 
 // Lazy initialization helper to ensure we use the latest API key
 function getAI() {
-  // Check multiple sources for the API key
   const apiKey = 
     (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : null) || 
     ((import.meta as any).env?.VITE_GEMINI_API_KEY) ||
@@ -12,15 +11,41 @@ function getAI() {
 
   if (!apiKey) {
     console.warn("Gemini API key is missing. Please set GEMINI_API_KEY or VITE_GEMINI_API_KEY.");
-  } else {
-    // Masked log for debugging (e.g., "AI Key detected: AIza...4Xy")
-    const masked = apiKey.length > 8 
-      ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`
-      : "***";
-    console.log(`Gemini API initialized with key: ${masked}`);
   }
   
   return new GoogleGenAI({ apiKey });
+}
+
+function getDifficultyGuidelines(difficulty: Difficulty): string {
+  switch (difficulty) {
+    case 'Easy':
+      return `EASY DIFFICULTY RULES:
+  - Ask simple, direct questions that test basic understanding.
+  - Questions should be answerable in 2-3 sentences.
+  - Focus on definitions, basic concepts, and "what is" style questions.
+  - Avoid multi-part questions. Ask ONE thing at a time.
+  - Keep questions SHORT (1-2 sentences max).
+  - Example style: "What is...?", "Name the...?", "What does X do?"
+  - The candidate should feel confident and comfortable answering.`;
+      
+    case 'Medium':
+      return `MEDIUM DIFFICULTY RULES:
+  - Ask standard interview-level questions that test practical knowledge.
+  - Questions can require explanations or comparisons (answerable in 3-5 sentences).
+  - Mix of conceptual and practical/scenario-based questions.
+  - Some questions can be short ("Explain X"), others can have a small scenario.
+  - Keep most questions to 1-3 sentences. Only occasionally ask longer ones.
+  - Example style: "Explain the difference between...", "How would you handle...", "What are the advantages of..."`;
+      
+    case 'Hard':
+      return `HARD DIFFICULTY RULES:
+  - Ask challenging questions that test deep expertise and critical thinking.
+  - Include scenario-based problems, system design, trade-off analysis.
+  - Questions can be multi-layered but should still be clear.
+  - Test edge cases, best practices, and real-world problem solving.
+  - Keep questions concise but impactful — no unnecessary padding.
+  - Example style: "Design a system that...", "You notice X happening in production. How would you debug...", "Compare the trade-offs between..."`;
+  }
 }
 
 export async function generateFirstQuestion(
@@ -30,19 +55,24 @@ export async function generateFirstQuestion(
   userStatus: UserStatus
 ): Promise<string> {
   const ai = getAI();
-  const model = "gemini-3-flash-preview";
-  const prompt = `You are a world-class technical interviewer. You are interviewing a candidate for a ${domain} role.
+  const model = "gemini-2.5-flash";
+  const diffGuidelines = getDifficultyGuidelines(difficulty);
   
-  Candidate Profile:
-  - Qualification: ${qualification}
-  - Current Status: ${userStatus}
-  - Target Difficulty: ${difficulty}
-  
-  Instructions:
-  1. Start the interview with a high-quality, relevant technical question.
-  2. The question should be appropriate for someone with a ${qualification} background and their status as a ${userStatus}.
-  3. Be professional, encouraging, and concise.
-  4. Return ONLY the question text. Do not include any introductory remarks like "Hello" or "Let's start".`;
+  const prompt = `You are a professional interviewer conducting a mock interview for the "${domain}" field.
+
+Candidate Profile:
+- Qualification: ${qualification}
+- Current Status: ${userStatus}
+- Difficulty Level: ${difficulty}
+
+${diffGuidelines}
+
+IMPORTANT RULES:
+1. Ask your FIRST question now. Make it welcoming but professional.
+2. The question must be relevant to the "${domain}" field and appropriate for someone with a ${qualification} background.
+3. Do NOT add any greeting, introduction, or "Let's begin" — just ask the question directly.
+4. Keep the question concise. ${difficulty === 'Easy' ? 'Maximum 1-2 sentences.' : difficulty === 'Medium' ? 'Maximum 2-3 sentences.' : 'Maximum 3-4 sentences.'}
+5. Return ONLY the question text, nothing else.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -53,7 +83,7 @@ export async function generateFirstQuestion(
   } catch (error: any) {
     const isQuota = error.code === 429 || JSON.stringify(error).includes('429') || JSON.stringify(error).includes('RESOURCE_EXHAUSTED');
     if (isQuota) {
-      console.error("Gemini API Quota Exceeded (429). This is a limit on the shared API key. Please set your own API key in the app settings to continue.");
+      console.error("Gemini API Quota Exceeded (429).");
     } else {
       console.error("Gemini API Error:", error);
     }
@@ -69,23 +99,31 @@ export async function generateNextQuestion(
   history: { question: string; answer: string }[]
 ): Promise<string> {
   const ai = getAI();
-  const model = "gemini-3-flash-preview";
-  const prompt = `You are a world-class technical interviewer for a ${domain} role.
+  const model = "gemini-2.5-flash";
+  const diffGuidelines = getDifficultyGuidelines(difficulty);
+  const questionNumber = history.length + 1;
   
-  Candidate Profile:
-  - Qualification: ${qualification}
-  - Current Status: ${userStatus}
-  - Target Difficulty: ${difficulty}
-  
-  Interview History:
-  ${JSON.stringify(history, null, 2)}
-  
-  Instructions:
-  1. Based on the previous answers, ask the next high-quality technical question.
-  2. You can follow up on a previous answer to dig deeper or move to a new relevant topic within ${domain}.
-  3. Ensure the question is challenging but fair given the ${difficulty} level and ${qualification} background.
-  4. Be professional and concise.
-  5. Return ONLY the question text.`;
+  const prompt = `You are a professional interviewer conducting a mock interview for the "${domain}" field.
+This is question #${questionNumber} out of 10.
+
+Candidate Profile:
+- Qualification: ${qualification}
+- Current Status: ${userStatus}
+- Difficulty Level: ${difficulty}
+
+${diffGuidelines}
+
+Previous Q&A:
+${history.map((h, i) => `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}`).join('\n\n')}
+
+IMPORTANT RULES:
+1. Ask the NEXT interview question based on the conversation so far.
+2. If the candidate answered well, move to a new topic within ${domain}. If they struggled, ask a simpler follow-up.
+3. Cover DIFFERENT topics — don't repeat the same subject area.
+4. Keep the question ${difficulty === 'Easy' ? 'short and simple (1-2 sentences max)' : difficulty === 'Medium' ? 'moderate length (1-3 sentences)' : 'focused but can include a scenario (2-4 sentences max)'}.
+5. ${questionNumber <= 5 ? 'Focus on core fundamentals of ' + domain + '.' : 'You can explore slightly advanced or practical topics now.'}
+6. Vary question length — some questions should be very short ("What is X?"), others can be a bit longer.
+7. Return ONLY the question text, nothing else.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -96,7 +134,7 @@ export async function generateNextQuestion(
   } catch (error: any) {
     const isQuota = error.code === 429 || JSON.stringify(error).includes('429') || JSON.stringify(error).includes('RESOURCE_EXHAUSTED');
     if (isQuota) {
-      console.error("Gemini API Quota Exceeded (429). This is a limit on the shared API key. Please set your own API key in the app settings to continue.");
+      console.error("Gemini API Quota Exceeded (429).");
     } else {
       console.error("Gemini API Error:", error);
     }
@@ -112,9 +150,9 @@ export async function evaluateInterview(
   history: { question: string; answer: string }[]
 ): Promise<Partial<Interview>> {
   const ai = getAI();
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-2.0-flash";
   
-  const prompt = `Evaluate the following technical mock interview.
+  const prompt = `Evaluate the following mock interview comprehensively.
   
   Candidate Profile:
   - Domain: ${domain}
@@ -122,20 +160,20 @@ export async function evaluateInterview(
   - Qualification: ${qualification}
   - Status: ${userStatus}
   
-  Interview Data (Questions and Answers):
-  ${JSON.stringify(history, null, 2)}
+  Interview Data:
+  ${history.map((h, i) => `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}`).join('\n\n')}
   
   Instructions:
-  1. Provide a detailed, professional evaluation of the candidate's performance.
-  2. Communication Score (0-100): Evaluate clarity, confidence, and structure of explanations.
-  3. Technical Score (0-100): Evaluate accuracy, depth of knowledge, and problem-solving approach.
-  4. Overall Score (0-100): A weighted average based on the role and difficulty.
-  5. Feedback:
-      - Strengths: List 3-5 specific areas where the candidate performed well.
-      - Weaknesses: List 3-5 specific areas where the candidate needs improvement.
-      - Suggestions: Provide actionable advice for further study or practice.
+  1. Communication Score (0-100): Clarity, structure, confidence of answers.
+  2. Technical Score (0-100): Accuracy, depth, problem-solving ability.
+  3. Overall Score (0-100): Weighted average considering the ${difficulty} difficulty and ${qualification} level.
+  4. Feedback:
+      - Strengths: List 3-5 specific strong points.
+      - Weaknesses: List 3-5 specific areas to improve.
+      - Suggestions: Provide 3-5 actionable study/practice tips.
   
-  Return the response as a JSON object matching the requested schema. Ensure the feedback is constructive and professional.`;
+  Be fair but honest. If answers are mostly empty or irrelevant, scores should reflect that.
+  Return as JSON matching the schema.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -168,7 +206,7 @@ export async function evaluateInterview(
   } catch (error: any) {
     const isQuota = error.code === 429 || JSON.stringify(error).includes('429') || JSON.stringify(error).includes('RESOURCE_EXHAUSTED');
     if (isQuota) {
-      console.error("Gemini API Quota Exceeded (429). This is a limit on the shared API key. Please set your own API key in the app settings to continue.");
+      console.error("Gemini API Quota Exceeded (429).");
     } else {
       console.error("Gemini API Error:", error);
     }

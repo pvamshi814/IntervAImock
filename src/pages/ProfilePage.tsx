@@ -20,11 +20,16 @@ import { Badge } from '../components/ui/Badge';
 import { auth, db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { cn } from '../utils/cn';
-import { UserProfile, Domain } from '../types';
+import { UserProfile } from '../types';
 import { useToast, Toast } from '../components/ui/Toast';
 import { Skeleton } from '../components/ui/LoadingSkeleton';
 
-const domains: Domain[] = ['Frontend', 'Backend', 'Fullstack', 'AI/ML', 'Data Science', 'Mobile', 'DevOps'];
+const domains = [
+  'Frontend Development', 'Backend Development', 'Full Stack', 'AI / Machine Learning', 
+  'Data Science', 'Mobile Development', 'DevOps / Cloud', 'Cybersecurity', 
+  'Accounting', 'Finance', 'Marketing', 'Human Resources', 'Product Management',
+  'Teaching', 'Content Writing', 'General Medicine', 'Corporate Law', 'Other'
+];
 
 export function ProfilePage() {
   const [loading, setLoading] = useState(true);
