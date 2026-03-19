@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { reportErrorToDeveloper } from '../utils/errorReporter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mic, 
@@ -235,6 +236,8 @@ export function InterviewScreen() {
         handleQuotaError(error);
         setSubmitting(false);
       } else {
+        console.error("Evaluation Error: ", error);
+        reportErrorToDeveloper('Mock Interview Evaluation Process', error);
         showToast("Failed to evaluate interview. Please try again.", "error");
         setSubmitting(false);
       }
