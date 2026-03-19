@@ -208,8 +208,7 @@ export function InterviewScreen() {
 
   const finalizeInterview = async (finalHistory: { question: string; answer: string }[]) => {
     if (!auth.currentUser) {
-      showToast("You must be logged in to save results.", "error");
-      navigate('/login');
+      navigate('/login', { state: { message: "You must be logged in to save results." } });
       return;
     }
     setSubmitting(true);

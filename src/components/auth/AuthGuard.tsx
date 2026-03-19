@@ -14,7 +14,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        navigate('/login');
+        navigate('/login', { state: { message: "Please sign in or create an account to access this page." } });
       }
       setLoading(false);
     });

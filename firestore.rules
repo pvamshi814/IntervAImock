@@ -81,7 +81,11 @@ service cloud.firestore {
     }
 
     match /interviews/{interviewId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      // Allow anyone with the private URL to view the specific report
+      allow get: if true;
+      // Limit querying/history exclusively to the authenticated owner
+      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
       allow create: if isAuthenticated() && isValidInterview(request.resource.data);
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn, Github, Chrome, ArrowRight, BrainCircuit } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -13,7 +13,17 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast, showToast, hideToast } = useToast();
+
+  useEffect(() => {
+    const state = location.state as { message?: string } | null;
+    if (state?.message) {
+      showToast(state.message, 'info');
+      // Clear state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location, showToast]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();

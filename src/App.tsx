@@ -23,6 +23,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/results/:id" element={<ResultsPage />} />
 
           {/* Protected Routes */}
           <Route
@@ -49,14 +50,7 @@ export default function App() {
               </AuthGuard>
             }
           />
-          <Route
-            path="/results/:id"
-            element={
-              <AuthGuard>
-                <ResultsPage />
-              </AuthGuard>
-            }
-          />
+
           <Route
             path="/history"
             element={

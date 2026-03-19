@@ -80,21 +80,43 @@ export function useVoice() {
     let currentSessionFinal = '';
 
     recognition.onresult = (event: any) => {
-      currentSessionFinal = '';
-      let currentSessionInterim = '';
+      let finalChunks: string[] = [];
+      let interimChunks: string[] = [];
 
-      // Loop from 0 to length to prevent Android duplicate isFinal bugs
       for (let i = 0; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
+        const transcript = event.results[i][0].transcript.trim();
+        if (!transcript) continue;
+
         if (event.results[i].isFinal) {
-          currentSessionFinal += transcript + ' ';
+          finalChunks.push(transcript);
         } else {
-          currentSessionInterim += transcript;
+          interimChunks.push(transcript);
         }
       }
 
+      const combineChunks = (chunks: string[]) => {
+        let text = '';
+        for (const chunk of chunks) {
+          if (!text) {
+            text = chunk;
+          } else if (chunk.toLowerCase().startsWith(text.toLowerCase())) {
+            // Android cumulative bug: new chunk contains all previous text
+            text = chunk;
+          } else if (text.toLowerCase().endsWith(chunk.toLowerCase())) {
+            // Android repeating bug: same word emitted consecutively 
+            // Do nothing
+          } else {
+            text += ' ' + chunk;
+          }
+        }
+        return text;
+      };
+
+      currentSessionFinal = combineChunks(finalChunks);
+      const currentSessionInterim = combineChunks(interimChunks);
+
       // Combine base transcripts with current session transcripts securely
-      const fullText = (finalTranscriptRef.current + ' ' + currentSessionFinal + currentSessionInterim).replace(/\s+/g, ' ').trim();
+      const fullText = (finalTranscriptRef.current + ' ' + currentSessionFinal + ' ' + currentSessionInterim).replace(/\s+/g, ' ').trim();
       
       if (onResultRef.current && fullText) {
         onResultRef.current(fullText);
