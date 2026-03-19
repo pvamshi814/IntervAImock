@@ -193,12 +193,27 @@ export async function evaluateInterview(
     });
 
     const text = response.text || "{}";
-    // Extract JSON from response (handle markdown code blocks or extra text)
+    
+    // Safely parse JSON structure
+    let parsed: any = {};
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      try { parsed = JSON.parse(jsonMatch[0]); } catch {}
+    } else {
+      try { parsed = JSON.parse(text); } catch {}
     }
-    return JSON.parse(text);
+    
+    // Enforce types to prevent Firebase Schema 'Failed to Evaluate' errors
+    return {
+      communicationScore: Number(parsed.communicationScore) || 0,
+      technicalScore: Number(parsed.technicalScore) || 0,
+      overallScore: Number(parsed.overallScore) || 0,
+      feedback: {
+        strengths: Array.isArray(parsed.feedback?.strengths) ? parsed.feedback.strengths : ["Good effort in completing the mock interview."],
+        weaknesses: Array.isArray(parsed.feedback?.weaknesses) ? parsed.feedback.weaknesses : ["Required more technical depth in several topics."],
+        suggestions: Array.isArray(parsed.feedback?.suggestions) ? parsed.feedback.suggestions : ["Review the core fundamentals of this domain.", "Practice expressing technical concepts more clearly."],
+      }
+    };
   } catch (error: any) {
     const isQuota = error.code === 429 || JSON.stringify(error).includes('429') || JSON.stringify(error).includes('RESOURCE_EXHAUSTED');
     if (isQuota) {
